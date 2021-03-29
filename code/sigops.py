@@ -35,7 +35,7 @@ class VissimSignalController():
 
 
     def xml_read(self):
-        xml_tree = ElementTree.parse(filepath)
+        xml_tree = ElementTree.parse(self.filepath)
         sc = xml_tree.getroot()
         num_sgs = len(sc.find('sgs').getchildren())
 
@@ -127,20 +127,35 @@ class VissimSignalController():
 
 
     def update_sc(self):
-        self.sc.write(self.filepath, encoding="utf-8", xml_declaration=True)
+        self.xml_tree.write(self.filepath, encoding="utf-8", xml_declaration=True)
 
 
     def get_target_prog(self, progId):
         return self.sc.find('progs').getchildren()[progId - 1]
 
 
-    def update_offset(self, progId, new_offset):
+    def update_text(self, progId, name):
+        assert type(name) is str
+        target_prog = self.get_target_prog(progId)
+        original_id = target_prog.attrib['id']
+        target_prog.attrib['id'] = str(self.num_progs)
+        target_prog.attrib['name'] = name
+        print(
+            "[Info] program {:s} id changed from {:s} to {:s} with name [{:s}]".format(
+                str(progId), original_id, str(self.num_progs), name
+            )
+        )
+
+
+    def update_offset(self, progId, new_offset, viz=False):
         target_prog = self.get_target_prog(progId)
         cycle_len = target_prog.attrib['cycletime']
         assert new_offset < int(cycle_len) / 1000
         target_prog.attrib['offset'] = str(int(new_offset * 1000))
         self.update_sc()
-        print("[Info] New offset for program {:d}: {:d}".format(progId, new_offset))
+
+        if viz:
+            print("[Info] New offset for program {:d}: {:d}".format(progId, new_offset))
 
 
     def update_green(self, progId, new_green, viz=False):
@@ -175,7 +190,7 @@ class VissimSignalController():
             self.viz_prog(progId=progId)
 
 
-    def clone_prog(self, clone_target=-1):
+    def clone_prog(self, id=None, name=None, clone_target=-1):
         # clone prog with miniDOM
         progs = self.dom_root.getElementsByTagName('progs')[0]
         if clone_target != -1:
@@ -185,7 +200,7 @@ class VissimSignalController():
         progs.appendChild(cloned_prog)
 
         # save
-        f = open(filepath, 'w', encoding='utf-8')
+        f = open(self.filepath, 'w', encoding='utf-8')
         self.dom_tree.writexml(f, encoding='utf-8')
         f.close()
 
@@ -198,46 +213,61 @@ class VissimSignalController():
         removed_prog.parentNode.removeChild(removed_prog)
 
         # save
-        f = open(filepath, 'w', encoding='utf-8')
+        f = open(self.filepath, 'w', encoding='utf-8')
         self.dom_tree.writexml(f, encoding='utf-8')
         f.close()
 
 
     def add_prog(self, params):
         self.clone_prog()
+        self.load()
 
         # set up params
+        name = params['name']
         cycle = params['cycle']
         green = params['green']
         offset = params['offset']
 
         # update
-        self.update_cycle(progId=23, new_cycle=cycle, new_green=green)
-        self.update_offset(progId=23, new_offset=offset)
+        self.update_text(progId=self.num_progs, name=name)
+        self.update_cycle(progId=self.num_progs, new_cycle=cycle, new_green=green)
+        self.update_offset(progId=self.num_progs, new_offset=offset)
 
 
 if __name__ == "__main__":
+
     # filepath
     filepath = '../data/晋陵北路-河海路.sig'
 
+    # init
     VSC = VissimSignalController(filepath)
     VSC.load()
-    progs_df = VSC.read_prog()
-    fig = VSC.viz_prog(progId=1)
-    fig.show()
-    print(VSC.num_progs)
 
-    # ====================================
-    # update
-    # ====================================
+    # call out the current programs (in pd.DataFrame format)
+    progs_df = VSC.read_prog()
+
+    # visualization for specific program
+    if False:
+        fig = VSC.viz_prog(progId=1)
+        fig.show()
+
+    # removal of program
+    while VSC.num_progs > 22:
+        VSC.remove_prog(-1)
+        VSC.load()
+        print("[Info] Current number of programs: {:d}".format(VSC.num_progs))
+
+
+    # add program
+    # program parameters
     params = {
-        'cycle':120,
+        'cycle':150,
         'green':[[24,24,0,0,79,79,60,60], # g_begin
                  [60,60,24,24,0,0,79,79]], # g_end
-        'offset':0
+        'offset':0,
+        'name':"THIS_IS_A_TEST_NAME"
     }
 
     VSC.add_prog(params)
-    VSC.load()
-    print(VSC.num_progs)
+    print("[Info] Current number of programs: {:d}".format(VSC.num_progs))
 
