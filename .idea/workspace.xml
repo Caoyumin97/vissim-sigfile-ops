@@ -3,8 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="f83831c1-d9b2-4bab-a11b-31a6c7480525" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/sig_process.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/sigops.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/晋陵北路-河海路.sig" beforeDir="false" afterPath="$PROJECT_DIR$/data/晋陵北路-河海路.sig" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/.ipynb_checkpoints/sig_process-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/code/.ipynb_checkpoints/sig_process-checkpoint.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/sig_process.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/code/sig_process.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/sigops.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/sigops.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,6 +106,7 @@
       <option name="presentableId" value="Default" />
       <updated>1616986506252</updated>
       <workItem from="1617023759974" duration="2086000" />
+      <workItem from="1617030638235" duration="1800000" />
     </task>
     <servers />
   </component>

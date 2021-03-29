@@ -3,7 +3,7 @@
 
 # # Libs
 
-from xml.dom.minidom import parse
+from xml.dom.minidom import parse, parseString
 from xml.etree import ElementTree
 
 import pandas as pd
@@ -16,6 +16,12 @@ import matplotlib.pyplot as plt
 class VissimSignalController():
 
     def __init__(self, filepath, writepath=None):
+        """
+        Initialization of VissimSignalController
+        :param filepath: the path of target .sig file
+        :param writepath: the path to write (when not specified, use the read path)
+        """
+
         self.filepath = filepath # read path
         if writepath is None:
             self.writepath = filepath
@@ -27,6 +33,11 @@ class VissimSignalController():
 
 
     def dom_read(self):
+        """
+        Read and parse the XML file with DOM
+        :return: None
+        """
+
         dom_tree = parse(self.filepath)
         dom_root = dom_tree.documentElement
 
@@ -35,6 +46,11 @@ class VissimSignalController():
 
 
     def xml_read(self):
+        """
+        Read and parse the XML file with ElementTree
+        :return: None
+        """
+
         xml_tree = ElementTree.parse(self.filepath)
         sc = xml_tree.getroot()
         num_sgs = len(sc.find('sgs').getchildren())
@@ -46,11 +62,20 @@ class VissimSignalController():
 
 
     def load(self):
+        """
+        Load (or re-load) the XML in both way
+        :return: None
+        """
+
         self.dom_read()
         self.xml_read()
 
 
     def read_prog(self):
+        """
+        Parse the signal program (using DOM) and format to pandas.DataFrame
+        :return: prog_df, pd.DataFrame
+        """
 
         # generate record(list)
         rec = []
@@ -82,6 +107,11 @@ class VissimSignalController():
 
 
     def viz_prog(self, progId):
+        """
+        Visualize the signal program using the VISSIG fashion
+        :param progId: ID of the signal program (i.e., the order)
+        :return: fig, matplotlib figure object
+        """
 
         # read raw file and programs
         self.dom_read()
@@ -127,14 +157,30 @@ class VissimSignalController():
 
 
     def update_sc(self):
+        """
+        Update the entire XML file using ElementTree
+        :return: None
+        """
         self.xml_tree.write(self.filepath, encoding="utf-8", xml_declaration=True)
 
 
     def get_target_prog(self, progId):
+        """
+        Get one targeted signal program using ElementTree
+        :param progId: ID of the signal program (i.e., the order)
+        :return: a tree node in the ElementTree
+        """
         return self.sc.find('progs').getchildren()[progId - 1]
 
 
     def update_text(self, progId, name):
+        """
+        Change the ID and name attributes of the given signal program.
+        :param progId: ID of the signal program (i.e., the order)
+        :param name: name of the targeted program
+        :return: None
+        """
+
         assert type(name) is str
         target_prog = self.get_target_prog(progId)
         original_id = target_prog.attrib['id']
@@ -148,6 +194,13 @@ class VissimSignalController():
 
 
     def update_offset(self, progId, new_offset, viz=False):
+        """
+        Change the offset of the given signal program
+        :param progId: ID of the signal program (i.e., the order)
+        :param new_offset: new offset value
+        :param viz: boolean, whether to show the updated offset
+        :return: None
+        """
         target_prog = self.get_target_prog(progId)
         cycle_len = target_prog.attrib['cycletime']
         assert new_offset < int(cycle_len) / 1000
@@ -159,6 +212,13 @@ class VissimSignalController():
 
 
     def update_green(self, progId, new_green, viz=False):
+        """
+        Change the green time of the given signal program
+        :param progId: ID of the signal program (i.e., the order)
+        :param new_green: 2-level list, new green time values
+        :param viz: boolean, whether to show the updated offset
+        :return: None
+        """
         target_prog = self.get_target_prog(progId)
         cycle_len = target_prog.attrib['cycletime']
         assert max(max(new_green)) <= int(cycle_len) / 1000
@@ -178,6 +238,14 @@ class VissimSignalController():
 
 
     def update_cycle(self, progId, new_cycle, new_green, viz=False):
+        """
+        Change the cycle length and green time of the given signal program
+        :param progId: ID of the signal program (i.e., the order)
+        :param new_cycle: new cycle length value
+        :param new_green: 2-level list, new green time values
+        :param viz: boolean, whether to show the updated offset
+        :return: None
+        """
         # update cycle length
         target_prog = self.get_target_prog(progId)
         target_prog.attrib['cycletime'] = str(int(1000 * new_cycle))
@@ -190,7 +258,12 @@ class VissimSignalController():
             self.viz_prog(progId=progId)
 
 
-    def clone_prog(self, id=None, name=None, clone_target=-1):
+    def clone_prog(self, clone_target=-1):
+        """
+        Clone a program from current program
+        :param clone_target: the cloning object
+        :return: None
+        """
         # clone prog with miniDOM
         progs = self.dom_root.getElementsByTagName('progs')[0]
         if clone_target != -1:
@@ -206,7 +279,11 @@ class VissimSignalController():
 
 
     def remove_prog(self, remove_target):
-
+        """
+        Remove a program from the current programs
+        :param remove_target: equivalent to progId (-1 refers to the latest program)
+        :return: None
+        """
         # remove prog with DOM
         progs = self.dom_root.getElementsByTagName('progs')[0]
         removed_prog = progs.getElementsByTagName('prog')[remove_target]
@@ -219,6 +296,11 @@ class VissimSignalController():
 
 
     def add_prog(self, params):
+        """
+        Add a new program (clone + update)
+        :param params: parameters of the added signal program
+        :return: None
+        """
         self.clone_prog()
         self.load()
 
@@ -232,6 +314,29 @@ class VissimSignalController():
         self.update_text(progId=self.num_progs, name=name)
         self.update_cycle(progId=self.num_progs, new_cycle=cycle, new_green=green)
         self.update_offset(progId=self.num_progs, new_offset=offset)
+
+
+    def format_xml(self):
+        """
+        Format the XML file to be readable by VISSIG
+        :return: None
+        """
+        # read as string
+        f = open(self.filepath, 'r', encoding='utf-8')
+        doc = f.readlines()
+        f.close()
+
+        # parse string with DOM
+        string = ''
+        for item in doc:
+            string += item.split('\n')[0]
+        pretty_string = parseString(string).toprettyxml()
+
+        # save
+        f = open(self.filepath, 'w', encoding='utf-8')
+        f.write(pretty_string)
+        f.close()
+
 
 
 if __name__ == "__main__":
@@ -270,4 +375,6 @@ if __name__ == "__main__":
 
     VSC.add_prog(params)
     print("[Info] Current number of programs: {:d}".format(VSC.num_progs))
+
+    VSC.format_xml()
 
